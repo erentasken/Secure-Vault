@@ -1,15 +1,22 @@
 {
-    "erer": {
-        "username": "erer",
-        "salt": "JDJiJDA1JFRtRHc3cFowWUxPb09zZDJmaEU4V3U=",
-        "hashed_password": "JDJiJDA1JFRtRHc3cFowWUxPb09zZDJmaEU4V3VzeGVUNk1RSHZLSURWVzZ4bTVlUDVpcTJrdnYubXhH"
+    "ren": {
+        "username": "ren",
+        "salt": "JDJiJDA1JEFFRHpiZDRtVVd6TjdwSmwuNUhoZy4=",
+        "hashed_password": "JDJiJDA1JEFFRHpiZDRtVVd6TjdwSmwuNUhoZy5uVHNhTmxGVWpzeTZCb1dUUnZBRWhFblpRSjRhTEZ5"
     },
-    "user_files/erer/input.txt.enc": {
-        "filename": "user_files/erer/input.txt.enc",
-        "file_hash": "db814c2903eb9adb520c8bb8f2919f236e754bff843fccc1e1463169594488fb"
+    "eren": {
+        "username": "eren",
+        "salt": "JDJiJDA1JE5iTVJ5UDhBUkFIbDMwZ3ZEYTQzTWU=",
+        "hashed_password": "JDJiJDA1JE5iTVJ5UDhBUkFIbDMwZ3ZEYTQzTWVTV2hTL1ZDVlhiQy80aEtzWWx4QjFmZzBLd0hvMklX"
     },
-    "user_files/erer/config.json.enc": {
-        "filename": "user_files/erer/config.json.enc",
-        "file_hash": "2083b0e12713d9255a359715886095cd4107ad2b6fa4b9630c053e728f58e5f4"
+    "rrr": {
+        "username": "rrr",
+        "salt": "JDJiJDA1JFJlZ0Z1SVg3SHNjVm9RRkMzRjcuaWU=",
+        "hashed_password": "JDJiJDA1JFJlZ0Z1SVg3SHNjVm9RRkMzRjcuaWVJV2EzRVdudS9manBxeGxIWU5NSGhIaTdPOThCeWlH"
+    },
+    "asd": {
+        "username": "asd",
+        "salt": "JDJiJDA1JDk5ZC9xZDVGY3pCNU0wci94NmEweU8=",
+        "hashed_password": "JDJiJDA1JDk5ZC9xZDVGY3pCNU0wci94NmEweU9mUkFBRjAvcFZBb1AuMC5QVnJuSU9PdHBmMFdSM1Ay"
     }
 }
