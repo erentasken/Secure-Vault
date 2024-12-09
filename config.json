@@ -1,22 +1,7 @@
 {
-    "ren": {
-        "username": "ren",
-        "salt": "JDJiJDA1JEFFRHpiZDRtVVd6TjdwSmwuNUhoZy4=",
-        "hashed_password": "JDJiJDA1JEFFRHpiZDRtVVd6TjdwSmwuNUhoZy5uVHNhTmxGVWpzeTZCb1dUUnZBRWhFblpRSjRhTEZ5"
-    },
     "eren": {
         "username": "eren",
-        "salt": "JDJiJDA1JE5iTVJ5UDhBUkFIbDMwZ3ZEYTQzTWU=",
-        "hashed_password": "JDJiJDA1JE5iTVJ5UDhBUkFIbDMwZ3ZEYTQzTWVTV2hTL1ZDVlhiQy80aEtzWWx4QjFmZzBLd0hvMklX"
-    },
-    "rrr": {
-        "username": "rrr",
-        "salt": "JDJiJDA1JFJlZ0Z1SVg3SHNjVm9RRkMzRjcuaWU=",
-        "hashed_password": "JDJiJDA1JFJlZ0Z1SVg3SHNjVm9RRkMzRjcuaWVJV2EzRVdudS9manBxeGxIWU5NSGhIaTdPOThCeWlH"
-    },
-    "asd": {
-        "username": "asd",
-        "salt": "JDJiJDA1JDk5ZC9xZDVGY3pCNU0wci94NmEweU8=",
-        "hashed_password": "JDJiJDA1JDk5ZC9xZDVGY3pCNU0wci94NmEweU9mUkFBRjAvcFZBb1AuMC5QVnJuSU9PdHBmMFdSM1Ay"
+        "salt": "JDJiJDA1JEwuT2hZdmhKakd6STB6Tms1SlpNTy4=",
+        "hashed_password": "JDJiJDA1JEwuT2hZdmhKakd6STB6Tms1SlpNTy5jVzlqaHdSNFJ0VE84YmgzS2hKNlc5UFZqU1FlWWRp"
     }
 }

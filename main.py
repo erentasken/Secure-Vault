@@ -65,24 +65,33 @@ def login_user():
     if not password:
         return
 
+    if username:
+        salt = get_user_data(username, "salt")
+    else: 
+        salt = "default salt"
+        
+
+    stored_hashed_password = get_user_data(username, "hashed_password")
+    # stored_hashed_password = base64.b64decode(user_data["hashed_password"])
+
+    if bcrypt.checkpw(password.encode('utf-8'), base64.b64decode(stored_hashed_password)):
+        current_user = username
+        current_key = key_generator(password, salt)
+        messagebox.showinfo("Login", "Login successful!")
+        update_current_user_display()
+        reload_files()
+        return
+
+    messagebox.showerror("Login", "Invalid username or password.")
+
+
+def get_user_data(username, data):
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, "r") as f:
             config_data = json.load(f)
-
         user_data = config_data.get(username)
-        if user_data:
-            salt = base64.b64decode(user_data["salt"])
-            stored_hashed_password = base64.b64decode(user_data["hashed_password"])
 
-            if bcrypt.checkpw(password.encode('utf-8'), stored_hashed_password):
-                current_user = username
-                current_key = key_generator(password, "random_salt_value")
-                messagebox.showinfo("Login", "Login successful!")
-                update_current_user_display()
-                reload_files()
-                return
-
-    messagebox.showerror("Login", "Invalid username or password.")
+        return user_data[data]
 
 def update_current_user_display():
     if guestmode:
@@ -125,16 +134,19 @@ def handle_file_decryption(file_full_path):
         key = simpledialog.askstring("Decryption Key", "Enter decryption key:")
         if key:
             key = key_generator(key, "random_salt_value")
-            decrypt_file_save(file_full_path, key, current_user)
+            if not decrypt_file_save(file_full_path, key, current_user):
+                return False
             reload_files()
         else:
             messagebox.showerror("Decryption", "No key provided.")
     elif current_key:
-        decrypt_file_save(file_full_path, current_key, current_user)
+        if not decrypt_file_save(file_full_path, current_key, current_user):
+            return False
         reload_files()
     else:
         messagebox.showerror("Decryption", "Please log in to decrypt files.")
 
+    return True
 def encrypt_file_dialog():
     file_path = filedialog.askopenfilename(title="Select a file to encrypt", filetypes=[("All Files", "*.*")])
     if file_path:
@@ -246,6 +258,9 @@ login_button.grid(row=0, column=1, padx=5, pady=5)
 
 guest_button = tk.Button(button_frame_bottom, text="Guest Mode", command=enable_guest_mode, width=15, bg="#4CAF50", fg="white", font=("Helvetica", 12), relief="raised")
 guest_button.grid(row=0, column=2, padx=5, pady=5)
+
+
+# print("Test", get_user_data("eren"))
 
 reload_files()
 root.mainloop()
