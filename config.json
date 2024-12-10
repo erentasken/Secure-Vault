@@ -1,10 +1,22 @@
 {
+    "new": {
+        "salt": "JDJiJDA1JGhtdnZlQS5wWDlzMGU1OWVEUEdqS3U=",
+        "password": "JDJiJDA1JGhtdnZlQS5wWDlzMGU1OWVEUEdqS3VOUVpsM1BUQjl1WkpCWDdlc3hGVzF4OXRVLlFWRUd1"
+    },
+    "newVault": {
+        "salt": "JDJiJDA1JGc3TTVuR2FRbWwzMVd2M0ovNjNQb3U=",
+        "password": "JDJiJDA1JGc3TTVuR2FRbWwzMVd2M0ovNjNQb3VZQ2w2UXFUbFlhWUlwNWd0TmpwL05LVGF6aE84RE4y"
+    },
+    "dans": {
+        "salt": "JDJiJDA1JDJjMHpsbGdCOERwRHdidlNYMTguY3U=",
+        "password": "JDJiJDA1JDJjMHpsbGdCOERwRHdidlNYMTguY3U1cm90bnhXSTFNVG9EZmZMMjcydXRlTjdveWVuL09X"
+    },
     "eee": {
-        "salt": "JDJiJDA1JHJnUzhFVlkzUnVrZVZhY0JIV3IvYi4=",
-        "password": "JDJiJDA1JHJnUzhFVlkzUnVrZVZhY0JIV3IvYi5vV2szMHkuMk14cllydzAuWFNSRy5vTUFQODQ1Y1JP"
+        "salt": "JDJiJDA1JG9KVE1YQm1ZdHlFYkF4VzV0d1hQM2U=",
+        "password": "JDJiJDA1JG9KVE1YQm1ZdHlFYkF4VzV0d1hQM2VJdnpKYUR5aWtZQzhTSE5VSDJrYWsvdUpVY2x1ZTRt"
     },
     "eren": {
-        "salt": "JDJiJDA1JEFhR1lXMmVDVm5weWxUbjlzbDZmVmU=",
-        "password": "JDJiJDA1JEFhR1lXMmVDVm5weWxUbjlzbDZmVmVYYVVlMzUxdkRtSG5nVWtFaW5ud2NSQTBHTmRjYWtD"
+        "salt": "JDJiJDA1JDhUTGpPcDZORm5xajhMVUhtUzVBenU=",
+        "password": "JDJiJDA1JDhUTGpPcDZORm5xajhMVUhtUzVBenVpa2hPd3YzQTM4WDFjcWRnelExM2VMOWNBME9Ld09P"
     }
 }
