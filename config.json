@@ -1,7 +1,10 @@
 {
+    "eee": {
+        "salt": "JDJiJDA1JHJnUzhFVlkzUnVrZVZhY0JIV3IvYi4=",
+        "password": "JDJiJDA1JHJnUzhFVlkzUnVrZVZhY0JIV3IvYi5vV2szMHkuMk14cllydzAuWFNSRy5vTUFQODQ1Y1JP"
+    },
     "eren": {
-        "username": "eren",
-        "salt": "JDJiJDA1JEwuT2hZdmhKakd6STB6Tms1SlpNTy4=",
-        "hashed_password": "JDJiJDA1JEwuT2hZdmhKakd6STB6Tms1SlpNTy5jVzlqaHdSNFJ0VE84YmgzS2hKNlc5UFZqU1FlWWRp"
+        "salt": "JDJiJDA1JEFhR1lXMmVDVm5weWxUbjlzbDZmVmU=",
+        "password": "JDJiJDA1JEFhR1lXMmVDVm5weWxUbjlzbDZmVmVYYVVlMzUxdkRtSG5nVWtFaW5ud2NSQTBHTmRjYWtD"
     }
 }

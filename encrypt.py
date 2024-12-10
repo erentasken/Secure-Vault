@@ -3,10 +3,7 @@ from Crypto.Random import get_random_bytes
 
 NONCE_SIZE = 8
 
-def encrypt_file(file_path, key):
-    with open(file_path, 'rb') as f:
-        file_data = f.read()
-
+def encrypt_file(file_data, key):
     nonce = get_random_bytes(NONCE_SIZE)
     cipher = AES.new(key, AES.MODE_CTR, nonce=nonce)
     
