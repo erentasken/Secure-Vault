@@ -10,43 +10,34 @@ from encrypt import decrypt_file, decrypt_vault, encrypt_file, encrypt_vault, re
 DECRYPTED_FILE_EXT = '_decrypted'
 CurrentVaultName = None
 VAULT_PATH = './vault'
-VaultKey = None
 Password = None
 
-def create_vault_directory_and_file():
-    global CurrentVaultName
+# Utility Functions
+def get_vault_path(vault_name):
+    return os.path.join(VAULT_PATH, vault_name)
 
-    if CurrentVaultName is not None:
-        user_vault_path = os.path.join(VAULT_PATH, CurrentVaultName)
-    else:
-        raise ValueError("CurrentVaultName is not set. Cannot create a vault directory.")
+def get_vault_file_path(vault_name):
+    return os.path.join(get_vault_path(vault_name), ".vault")
 
-    if not os.path.exists(user_vault_path):
-        os.makedirs(user_vault_path, exist_ok=True)
-    
-    vault_file_path = os.path.join(user_vault_path, ".vault")
-    if not os.path.exists(vault_file_path):
-        open(vault_file_path, "w").close()
-        print(f"Empty vault file created at: {vault_file_path}")
-    else:
-        print(f"Vault file already exists at: {vault_file_path}")
+def secure_input(prompt, hide_input=False):
+    return simpledialog.askstring(prompt, prompt, show="*" if hide_input else None)
 
 def create_vault():
     global CurrentVaultName
-    vaultname = simpledialog.askstring("Create", "Enter vault name:")
+    vaultname = secure_input("Create Vault Name:")
     if not vaultname:
         return
 
-    password = simpledialog.askstring("Create", "Enter a password:", show='*')
+    password = secure_input("Enter Vault Password:", hide_input=True)
     if not password:
         return
-    
-    encrypt_vault(vaultname, password)
 
-    messagebox.showinfo("Creation", "Vault Created Successfully!")
+    CurrentVaultName = vaultname
+    encrypt_vault(vaultname, password)
+    messagebox.showinfo("Success", "Vault Created Successfully!")
 
 def open_vault():
-    global CurrentVaultName, VaultKey, Password
+    global CurrentVaultName, Password
 
     vaultname = simpledialog.askstring("Open Vault", "Enter Vault Name:")
     if not vaultname:
@@ -58,8 +49,6 @@ def open_vault():
         messagebox.showerror("Open", "Provide Vault Password")
         return
     
-    print("decrypting vault : ", vaultname, " password: " , password)
-
     if not decrypt_vault(vaultname, password):
         messagebox.showerror("Open", "Invalid Vault Name or password.")
 
@@ -67,9 +56,10 @@ def open_vault():
         encrypt_vault(CurrentVaultName, Password)
 
     messagebox.showinfo("Open", "Vault Opened!")
-    user_label.config(text="Opened Vault : " + vaultname)
+    vault_label.config(text="Opened Vault : " + vaultname)
     CurrentVaultName = vaultname
     Password = password
+
     reload_files()
 
 def open_file(file_path):
@@ -86,39 +76,26 @@ def open_file(file_path):
     except Exception as e:
         messagebox.showerror("Error", f"Failed to open file: {e}")
 
-#########################################################################################3
-
 def reload_files():
     global CurrentVaultName
 
-    files = read_all_file_names(CurrentVaultName)
-
-    if files == False:
-        file_listbox_encrypted.delete(0, tk.END)
-        return False
-
+    info_label.config(text="Double click on an encrypted file to decrypt it.")
 
     file_listbox_encrypted.delete(0, tk.END)
-
-    for file in files:
-        file_listbox_encrypted.insert(tk.END, file)
-
-    # List the files in the vault directory
     file_listbox_decrypted.delete(0, tk.END)
-    vault_path = os.path.join(VAULT_PATH, CurrentVaultName) if CurrentVaultName else VAULT_PATH
-    for file in os.listdir(vault_path):
-        if not file == ".vault":
-            file_listbox_decrypted.insert(tk.END, file)
-    
-    show_files(file_listbox_encrypted)
 
-def show_files(listbox):
-    global CurrentVaultName
+    if not CurrentVaultName:
+        return
+
     files = read_all_file_names(CurrentVaultName)
+    if files:
+        for file in files:
+            file_listbox_encrypted.insert(tk.END, file)
 
-    listbox.delete(0, tk.END)
-    for file in files:
-        listbox.insert(tk.END, file)
+    vault_path = get_vault_path(CurrentVaultName)
+    for file in os.listdir(vault_path):
+        if file != ".vault":
+            file_listbox_decrypted.insert(tk.END, file)
 
 def remove_files():
     global CurrentVaultName
@@ -129,7 +106,7 @@ def remove_files():
     reload_files()
 
 def double_click_encrypted(event, listbox : Listbox):
-    global CurrentVaultName
+    global CurrentVaultName, Password
 
     selected_index = listbox.curselection()
     if selected_index:
@@ -137,8 +114,19 @@ def double_click_encrypted(event, listbox : Listbox):
         user_path = os.path.join(VAULT_PATH, CurrentVaultName)
         file_full_path = os.path.join(user_path, file_path)
 
-        if not handle_file_decryption(file_full_path):
-            messagebox.showerror("Decryption", "Decryption failed.")
+        file_name = os.path.basename(file_full_path)
+
+        if not decrypt_file(file_name, Password, CurrentVaultName):
+            if CurrentVaultName: 
+                messagebox.showerror("Decryption", "Decryption failed.")
+            else:
+                messagebox.showerror("Decryption", "Open Vault For Decryption.")
+            return False
+        reload_files()
+
+        messagebox.showinfo("Decryption", "File decrypted successfully!")
+
+        return True
 
 def double_click_decrypted(event, listbox : Listbox):
     selected_index = listbox.curselection()
@@ -147,40 +135,18 @@ def double_click_decrypted(event, listbox : Listbox):
         file_full_path = os.path.join(VAULT_PATH, CurrentVaultName, file_path)
         open_file(file_full_path)
 
-def handle_file_decryption(file_full_path):
-    global Password, CurrentVaultName
-
-    file_name = os.path.basename(file_full_path)
-
-    if not decrypt_file(file_name, Password, CurrentVaultName):
-        if CurrentVaultName: 
-            messagebox.showerror("Decryption", "Decryption failed.")
-        else:
-            messagebox.showerror("Decryption", "Open Vault For Decryption.")
-        return False
-    reload_files()
-
-    return True
-
 def encrypt_file_dialog():
-    global CurrentVaultName, CurrentKey
+    global CurrentVaultName, Password
     file_path = filedialog.askopenfilename(title="Select a file to encrypt", filetypes=[("All Files", "*.*")])
     if file_path:
         user_path = os.path.join(VAULT_PATH, CurrentVaultName) if CurrentVaultName else VAULT_PATH
         os.makedirs(user_path, exist_ok=True)
 
-        if not handle_encryption(file_path, VaultKey):
+        if encrypt_file(file_path, Password, CurrentVaultName):
+            messagebox.showinfo("Encryption", "File encrypted successfully!")
+            reload_files()
+        else:
             messagebox.showerror("Encryption", "Encryption failed.")
-
-def handle_encryption(file_path, key):
-    global CurrentVaultName, Password
-    if encrypt_file(file_path, Password, CurrentVaultName):
-        messagebox.showinfo("Encryption", "File encrypted successfully!")
-        reload_files()
-        return True
-    else:
-        messagebox.showerror("Encryption", "Encryption failed.")
-        return False
 
 root = tk.Tk()
 root.title("File Vault")
@@ -188,8 +154,18 @@ root.title("File Vault")
 root.geometry("800x400")
 root.configure(bg="#f0f0f0")
 
-user_label = tk.Label(root, text="No Vault Opened", anchor="w", font=("Helvetica", 14), bg="#f0f0f0")
-user_label.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
+vault_label = tk.Label(root, text="No Vault Opened", anchor="w", font=("Helvetica", 14), bg="#f0f0f0")
+vault_label.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
+
+info_label = tk.Label(
+    root,
+    text="Double click on an encrypted file to decrypt it.",
+    font=("Helvetica", 12),
+    bg="#f0f0f0",
+    fg="#333333",
+    anchor="center"
+)
+info_label.grid(row=0, column=1, pady=10, sticky="ew")
 
 button_frame = tk.Frame(root, bg="#f0f0f0")
 button_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
@@ -234,11 +210,8 @@ button_frame_bottom.grid(row=3, column=0, padx=10, pady=10, sticky="w")
 create_button = tk.Button(button_frame_bottom, text="Create Vault", command=create_vault, width=15, bg="#4CAF50", fg="white", font=("Helvetica", 12), relief="raised")
 create_button.grid(row=0, column=0, padx=5, pady=5)
 
-login_button = tk.Button(button_frame_bottom, text="Open Vault", command=open_vault, width=15, bg="#4CAF50", fg="white", font=("Helvetica", 12), relief="raised")
-login_button.grid(row=0, column=1, padx=5, pady=5)
-
-# encrypt_vault("eren", "123123")
-# decrypt_vault("eren", "123123")
+open_vault_button = tk.Button(button_frame_bottom, text="Open Vault", command=open_vault, width=15, bg="#4CAF50", fg="white", font=("Helvetica", 12), relief="raised")
+open_vault_button.grid(row=0, column=1, padx=5, pady=5)
 
 root.mainloop()
 

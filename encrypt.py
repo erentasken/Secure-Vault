@@ -52,7 +52,6 @@ def encrypt_file(file_path, password: str, username):
 
     data_with_hash = hash_value + file_data
 
-    # Encrypt the data
     encrypted_data = encrypt(data_with_hash, key)
 
     file_name = os.path.basename(file_path)
@@ -70,7 +69,6 @@ def encrypt_file(file_path, password: str, username):
     offset = 0
     file_exists = False
     while offset < len(existing_data):
-        # current_salt = existing_data[offset:offset + 29]
         offset += SALT_SIZE
 
         file_name_len = int.from_bytes(existing_data[offset:offset + 4], 'big')
@@ -175,11 +173,9 @@ def read_all_file_names(vault_name: str):
     return file_names
 
 def encrypt_vault(vaultname: str, password: str):
-    # Create the path for the vault directory
     vault_dir_path = os.path.join(VAULT_PATH, vaultname)
     vault_file_path = os.path.join(vault_dir_path, ".vault")
     
-    # Check if the vault directory already exists
     if os.path.exists(vault_dir_path):
         try: 
             with open(vault_file_path, 'rb') as f:
@@ -195,36 +191,28 @@ def encrypt_vault(vaultname: str, password: str):
 
         data_with_hash = data + hash_value
 
-        # Encrypt the data
         encrypted_data = encrypt(data_with_hash, key)
         
-        # Rewrite the file with encrypted content
         with open(vault_file_path, 'wb') as f:
             f.write(salt + encrypted_data)
         
         return
     
-    # Create the vault directory
     os.makedirs(vault_dir_path)
     
     with open(vault_file_path, 'w') as vault_file:
         vault_file.write("")
 
-    # Generate salt
     salt = bcrypt.gensalt(rounds=5)
 
     key = key_generator(password, salt)
 
-    # Calculate hash of data
     hash_value = generate_hmac("".encode(), key)
 
-    # Append hash to data
     data_with_hash = "".encode() + hash_value
 
-    # Encrypt the data with hash
     encrypted_data = encrypt(data_with_hash, key)
 
-    # Save salt and encrypted data
     with open(vault_file_path, 'wb') as output_file:
         output_file.write(salt + encrypted_data)
 
@@ -237,28 +225,22 @@ def decrypt_vault(vaultname: str, password: str):
     if not os.path.exists(vault_file_path):
         raise FileNotFoundError(f"The encrypted vault file '{vault_file_path}' does not exist.")
     
-    # Read encrypted data
     with open(vault_file_path, 'rb') as input_file:
         file_data = input_file.read()
 
-    # Extract the salt and encrypted data
-    extracted_salt = file_data[:SALT_SIZE]  # Length of salt matches input salt length
+    extracted_salt = file_data[:SALT_SIZE] 
     encrypted_data = file_data[SALT_SIZE:]
     
     key = key_generator(password, extracted_salt)
 
-    # Decrypt the data
     decrypted_data = decrypt(encrypted_data, key)
     
-    # Split the decrypted data into content and hash
-    data = decrypted_data[:-MAC_SIZE]  # All but the last 32 bytes (hash size)
-    hash_value = decrypted_data[-MAC_SIZE:]  # Last 32 bytes (hash size)
+    data = decrypted_data[:-MAC_SIZE] 
+    hash_value = decrypted_data[-MAC_SIZE:]
     
-    # Verify the hash
     if not verify_hmac(data, key, hash_value):
         raise ValueError("Hash verification failed. Data integrity compromised.")
     
-    # Save the decrypted data back to the vault file
     with open(vault_file_path, 'wb') as output_file:
         output_file.write(data)
     
