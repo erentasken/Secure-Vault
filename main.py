@@ -4,40 +4,14 @@ import tkinter as tk
 from tkinter import Listbox, filedialog, messagebox, simpledialog
 import os
 import json
-import bcrypt
-import base64
-from Models.Vault import Vault
-from key_gen import key_generator
 from encrypt import decrypt_file, decrypt_vault, encrypt_file, encrypt_vault, read_all_file_names
 
-CONFIG_FILE = "config.json"
+# CONFIG_FILE = "config.json"
 DECRYPTED_FILE_EXT = '_decrypted'
-# VAULT_PATH = './vault'
 CurrentVaultName = None
 VAULT_PATH = './vault'
 VaultKey = None
 Password = None
-
-def add_to_config_file(data: Vault):
-    config_data = {}
-
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, "r") as f:
-                config_data = json.load(f)
-        except json.JSONDecodeError:
-            print("Error decoding JSON. The file might be corrupted or empty. Starting fresh.")
-            config_data = {}  # Initialize an empty dictionary if JSON is malformed
-        except Exception as e:
-            print(f"An unexpected error occurred: {e}")
-            config_data = {}  # Default to an empty dictionary if any other error occurs
-
-    vaultname = data.vaultname  # Assuming the Vault class has a vaultname attribute
-    if vaultname:
-        config_data[vaultname] = data.json()
-
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(config_data, f, indent=4)
 
 def create_vault_directory_and_file():
     global CurrentVaultName
@@ -50,7 +24,7 @@ def create_vault_directory_and_file():
     if not os.path.exists(user_vault_path):
         os.makedirs(user_vault_path, exist_ok=True)
     
-    vault_file_path = os.path.join(user_vault_path, "vault.bat")
+    vault_file_path = os.path.join(user_vault_path, ".vault")
     if not os.path.exists(vault_file_path):
         open(vault_file_path, "w").close()
         print(f"Empty vault file created at: {vault_file_path}")
@@ -63,28 +37,12 @@ def create_vault():
     if not vaultname:
         return
 
-    # if os.path.exists(os.path.join(VAULT_PATH, CurrentVaultName)):
-    #     messagebox.showerror("Create", "Vault already exists. Please open the vault.")
-    #     return
-
     password = simpledialog.askstring("Create", "Enter a password:", show='*')
     if not password:
         return
     
     encrypt_vault(vaultname, password)
 
-    print("vault created with name : ",  vaultname , " and password ;" , password)
-
-    # vault = Vault(
-    #     vaultname=vaultname,
-    #     password=password,
-    # )
-
-    # CurrentVaultName = vaultname
-
-    # create_vault_directory_and_file()
-
-    # add_to_config_file(vault)
     messagebox.showinfo("Creation", "Vault Created Successfully!")
 
 def open_vault():
@@ -112,48 +70,7 @@ def open_vault():
     user_label.config(text="Opened Vault : " + vaultname)
     CurrentVaultName = vaultname
     Password = password
-
-    # salt = get_vault_data("salt")
-    
-    # stored_hashed_password = get_vault_data("password")
-
-    # if salt is None or stored_hashed_password is None:
-    #     messagebox.showerror("Open", "Vault not found.")
-    #     return
-    
-
-    # if bcrypt.checkpw(password.encode('utf-8'), base64.b64decode(stored_hashed_password)):
-    #     if reload_files() == False:
-    #         return
-        
-    #     VaultKey = key_generator(password, salt)
-        
-    #     messagebox.showinfo("Open", "Vault Opened!")
-    #     user_label.config(text="Opened Vault : " + vaultname)
-    #     CurrentVaultName = vaultname
-    #     return
-    
-
-def get_vault_data(data):
-    global CurrentVaultName
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, "r") as f:
-            config_data = json.load(f)
-    else:
-        return None
-
-    vault_data = config_data.get(CurrentVaultName)
-
-    if vault_data is None:
-        print(f"Vault data for {CurrentVaultName} not found in config.")
-        return None
-
-    if data == "salt":
-        return vault_data.get("salt")
-    elif data == "password":
-        return vault_data.get("password")
-
-    return None
+    reload_files()
 
 def open_file(file_path):
     current_os = platform.system()
@@ -177,12 +94,12 @@ def reload_files():
     files = read_all_file_names(CurrentVaultName)
 
     if files == False:
+        file_listbox_encrypted.delete(0, tk.END)
         return False
 
-    if read_all_file_names(CurrentVaultName) is False:
-        return
 
     file_listbox_encrypted.delete(0, tk.END)
+
     for file in files:
         file_listbox_encrypted.insert(tk.END, file)
 
@@ -190,7 +107,7 @@ def reload_files():
     file_listbox_decrypted.delete(0, tk.END)
     vault_path = os.path.join(VAULT_PATH, CurrentVaultName) if CurrentVaultName else VAULT_PATH
     for file in os.listdir(vault_path):
-        if not file == "vault.bat":
+        if not file == ".vault":
             file_listbox_decrypted.insert(tk.END, file)
     
     show_files(file_listbox_encrypted)
@@ -268,7 +185,7 @@ def handle_encryption(file_path, key):
 root = tk.Tk()
 root.title("File Vault")
 
-root.geometry("800x600")
+root.geometry("800x400")
 root.configure(bg="#f0f0f0")
 
 user_label = tk.Label(root, text="No Vault Opened", anchor="w", font=("Helvetica", 14), bg="#f0f0f0")
