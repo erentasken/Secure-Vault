@@ -6,7 +6,6 @@ import os
 import json
 from encrypt import decrypt_file, decrypt_vault, encrypt_file, encrypt_vault, read_all_file_names
 
-# CONFIG_FILE = "config.json"
 DECRYPTED_FILE_EXT = '_decrypted'
 CurrentVaultName = None
 VAULT_PATH = './vault'
@@ -22,6 +21,7 @@ def get_vault_file_path(vault_name):
 def secure_input(prompt, hide_input=False):
     return simpledialog.askstring(prompt, prompt, show="*" if hide_input else None)
 
+
 def create_vault():
     global CurrentVaultName
     vaultname = secure_input("Create Vault Name:")
@@ -32,7 +32,7 @@ def create_vault():
     if not password:
         return
 
-    CurrentVaultName = vaultname
+    # CurrentVaultName = vaultname
     encrypt_vault(vaultname, password)
     messagebox.showinfo("Success", "Vault Created Successfully!")
 
@@ -51,6 +51,7 @@ def open_vault():
     
     if not decrypt_vault(vaultname, password):
         messagebox.showerror("Open", "Invalid Vault Name or password.")
+        return
 
     if not CurrentVaultName == None and not Password == None: 
         encrypt_vault(CurrentVaultName, Password)
@@ -79,13 +80,12 @@ def open_file(file_path):
 def reload_files():
     global CurrentVaultName
 
-    info_label.config(text="Double click on an encrypted file to decrypt it.")
+    if not CurrentVaultName:
+        messagebox.showerror("Encryption", "Open a vault to encrypt files.")
+        return
 
     file_listbox_encrypted.delete(0, tk.END)
     file_listbox_decrypted.delete(0, tk.END)
-
-    if not CurrentVaultName:
-        return
 
     files = read_all_file_names(CurrentVaultName)
     if files:
@@ -137,6 +137,11 @@ def double_click_decrypted(event, listbox : Listbox):
 
 def encrypt_file_dialog():
     global CurrentVaultName, Password
+
+    if not CurrentVaultName:
+        messagebox.showerror("Encryption", "Open a vault to encrypt files.")
+        return
+
     file_path = filedialog.askopenfilename(title="Select a file to encrypt", filetypes=[("All Files", "*.*")])
     if file_path:
         user_path = os.path.join(VAULT_PATH, CurrentVaultName) if CurrentVaultName else VAULT_PATH
@@ -151,21 +156,11 @@ def encrypt_file_dialog():
 root = tk.Tk()
 root.title("File Vault")
 
-root.geometry("800x400")
+root.geometry("800x500")
 root.configure(bg="#f0f0f0")
 
 vault_label = tk.Label(root, text="No Vault Opened", anchor="w", font=("Helvetica", 14), bg="#f0f0f0")
 vault_label.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
-
-info_label = tk.Label(
-    root,
-    text="Double click on an encrypted file to decrypt it.",
-    font=("Helvetica", 12),
-    bg="#f0f0f0",
-    fg="#333333",
-    anchor="center"
-)
-info_label.grid(row=0, column=1, pady=10, sticky="ew")
 
 button_frame = tk.Frame(root, bg="#f0f0f0")
 button_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
@@ -199,6 +194,17 @@ file_listbox_decrypted = tk.Listbox(encrypted_frame, height=10, width=40, yscrol
 file_listbox_decrypted.grid(row=1, column=2, padx=5)
 scrollbar_decrypted.grid(row=1, column=3, sticky="ns")
 scrollbar_decrypted.config(command=file_listbox_decrypted.yview)
+
+info_label = tk.Label(
+    root,
+    text="ℹ️ Double-click on encrypted files to decrypt them.",
+    font=("Helvetica", 12, "italic"),
+    bg="#d9edf7",
+    fg="#31708f",
+    padx=10,
+    pady=5,
+)
+info_label.grid(row=4, column=0, padx=10, pady=(0, 10), sticky="w")
 
 file_listbox_encrypted.bind("<Double-1>", lambda event: double_click_encrypted(event, file_listbox_encrypted))
 file_listbox_decrypted.bind("<Double-1>", lambda event: double_click_decrypted(event, file_listbox_decrypted))

@@ -223,7 +223,7 @@ def decrypt_vault(vaultname: str, password: str):
     vault_file_path = os.path.join(vault_dir_path, ".vault")
 
     if not os.path.exists(vault_file_path):
-        raise FileNotFoundError(f"The encrypted vault file '{vault_file_path}' does not exist.")
+        return False
     
     with open(vault_file_path, 'rb') as input_file:
         file_data = input_file.read()
@@ -239,7 +239,7 @@ def decrypt_vault(vaultname: str, password: str):
     hash_value = decrypted_data[-MAC_SIZE:]
     
     if not verify_hmac(data, key, hash_value):
-        raise ValueError("Hash verification failed. Data integrity compromised.")
+        return False
     
     with open(vault_file_path, 'wb') as output_file:
         output_file.write(data)
