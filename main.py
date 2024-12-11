@@ -16,6 +16,7 @@ DECRYPTED_FILE_EXT = '_decrypted'
 CurrentVaultName = None
 VAULT_PATH = './vault'
 VaultKey = None
+Password = None
 
 def add_to_config_file(data: Vault):
     config_data = {}
@@ -62,28 +63,32 @@ def create_vault():
     if not vaultname:
         return
 
-    if os.path.exists(os.path.join(VAULT_PATH, CurrentVaultName)):
-        messagebox.showerror("Create", "Vault already exists. Please open the vault.")
-        return
+    # if os.path.exists(os.path.join(VAULT_PATH, CurrentVaultName)):
+    #     messagebox.showerror("Create", "Vault already exists. Please open the vault.")
+    #     return
 
     password = simpledialog.askstring("Create", "Enter a password:", show='*')
     if not password:
         return
     
-    vault = Vault(
-        vaultname=vaultname,
-        password=password,
-    )
+    encrypt_vault(vaultname, password)
 
-    CurrentVaultName = vaultname
+    print("vault created with name : ",  vaultname , " and password ;" , password)
 
-    create_vault_directory_and_file()
+    # vault = Vault(
+    #     vaultname=vaultname,
+    #     password=password,
+    # )
 
-    add_to_config_file(vault)
+    # CurrentVaultName = vaultname
+
+    # create_vault_directory_and_file()
+
+    # add_to_config_file(vault)
     messagebox.showinfo("Creation", "Vault Created Successfully!")
 
 def open_vault():
-    global CurrentVaultName, VaultKey
+    global CurrentVaultName, VaultKey, Password
 
     vaultname = simpledialog.askstring("Open Vault", "Enter Vault Name:")
     if not vaultname:
@@ -95,29 +100,39 @@ def open_vault():
         messagebox.showerror("Open", "Provide Vault Password")
         return
     
+    print("decrypting vault : ", vaultname, " password: " , password)
+
+    if not decrypt_vault(vaultname, password):
+        messagebox.showerror("Open", "Invalid Vault Name or password.")
+
+    if not CurrentVaultName == None and not Password == None: 
+        encrypt_vault(CurrentVaultName, Password)
+
+    messagebox.showinfo("Open", "Vault Opened!")
+    user_label.config(text="Opened Vault : " + vaultname)
     CurrentVaultName = vaultname
+    Password = password
 
-    salt = get_vault_data("salt")
+    # salt = get_vault_data("salt")
     
-    stored_hashed_password = get_vault_data("password")
+    # stored_hashed_password = get_vault_data("password")
 
-    if salt is None or stored_hashed_password is None:
-        messagebox.showerror("Open", "Vault not found.")
-        return
+    # if salt is None or stored_hashed_password is None:
+    #     messagebox.showerror("Open", "Vault not found.")
+    #     return
     
 
-    if bcrypt.checkpw(password.encode('utf-8'), base64.b64decode(stored_hashed_password)):
-        if reload_files() == False:
-            return
+    # if bcrypt.checkpw(password.encode('utf-8'), base64.b64decode(stored_hashed_password)):
+    #     if reload_files() == False:
+    #         return
         
-        VaultKey = key_generator(password, salt)
+    #     VaultKey = key_generator(password, salt)
         
-        messagebox.showinfo("Open", "Vault Opened!")
-        user_label.config(text="Opened Vault : " + vaultname)
-        CurrentVaultName = vaultname
-        return
+    #     messagebox.showinfo("Open", "Vault Opened!")
+    #     user_label.config(text="Opened Vault : " + vaultname)
+    #     CurrentVaultName = vaultname
+    #     return
     
-    messagebox.showerror("Open", "Invalid Vault Name or password.")
 
 def get_vault_data(data):
     global CurrentVaultName
@@ -216,11 +231,11 @@ def double_click_decrypted(event, listbox : Listbox):
         open_file(file_full_path)
 
 def handle_file_decryption(file_full_path):
-    global VaultKey, CurrentVaultName
+    global Password, CurrentVaultName
 
     file_name = os.path.basename(file_full_path)
 
-    if not decrypt_file(file_name, VaultKey, CurrentVaultName):
+    if not decrypt_file(file_name, Password, CurrentVaultName):
         if CurrentVaultName: 
             messagebox.showerror("Decryption", "Decryption failed.")
         else:
@@ -241,8 +256,8 @@ def encrypt_file_dialog():
             messagebox.showerror("Encryption", "Encryption failed.")
 
 def handle_encryption(file_path, key):
-    global CurrentVaultName
-    if encrypt_file(file_path, key, CurrentVaultName):
+    global CurrentVaultName, Password
+    if encrypt_file(file_path, Password, CurrentVaultName):
         messagebox.showinfo("Encryption", "File encrypted successfully!")
         reload_files()
         return True
@@ -305,6 +320,11 @@ create_button.grid(row=0, column=0, padx=5, pady=5)
 login_button = tk.Button(button_frame_bottom, text="Open Vault", command=open_vault, width=15, bg="#4CAF50", fg="white", font=("Helvetica", 12), relief="raised")
 login_button.grid(row=0, column=1, padx=5, pady=5)
 
-decrypt_vault("newVault", "123123")
+# encrypt_vault("eren", "123123")
+# decrypt_vault("eren", "123123")
 
 root.mainloop()
+
+encrypt_vault(CurrentVaultName, Password)
+
+
