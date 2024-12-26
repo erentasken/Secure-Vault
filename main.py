@@ -11,7 +11,6 @@ CurrentVaultName = None
 VAULT_PATH = './vault'
 Password = None
 
-# Utility Functions
 def get_vault_path(vault_name):
     return os.path.join(VAULT_PATH, vault_name)
 
@@ -32,28 +31,47 @@ def create_vault():
     if not password:
         return
 
-    # CurrentVaultName = vaultname
     encrypt_vault(vaultname, password)
     messagebox.showinfo("Success", "Vault Created Successfully!")
 
-def open_vault():
+def lock_vault():
     global CurrentVaultName, Password
 
-    vaultname = simpledialog.askstring("Open Vault", "Enter Vault Name:")
+    if not CurrentVaultName:
+        messagebox.showerror("Lock", "No Vault Opened")
+        return
+
+    remove_files() # removes decrypted files
+
+    encrypt_vault(CurrentVaultName, Password)
+    messagebox.showinfo("Lock", "Vault Locked!")
+    vault_label.config(text="No Vault Opened")
+    CurrentVaultName = None
+    Password = None
+
+    file_listbox_encrypted.delete(0, tk.END)
+    file_listbox_decrypted.delete(0, tk.END)
+    
+
+def unlock_vault():
+    global CurrentVaultName, Password
+
+    vaultname = simpledialog.askstring("Unlock Vault", "Enter Vault Name:")
     if not vaultname:
-        messagebox.showerror("Open", "Provide Vault Name")
+        messagebox.showerror("Unlock", "Provide Vault Name")
         return
 
     password = simpledialog.askstring("Open Vault", "Enter Vault Password:", show='*')
     if not password:
-        messagebox.showerror("Open", "Provide Vault Password")
+        messagebox.showerror("Unlock", "Provide Vault Password")
         return
     
     if not decrypt_vault(vaultname, password):
-        messagebox.showerror("Open", "Invalid Vault Name or password.")
+        messagebox.showerror("Unlock", "Invalid Vault Name or password.")
         return
 
     if not CurrentVaultName == None and not Password == None: 
+        remove_files()
         encrypt_vault(CurrentVaultName, Password)
 
     messagebox.showinfo("Open", "Vault Opened!")
@@ -81,7 +99,6 @@ def reload_files():
     global CurrentVaultName
 
     if not CurrentVaultName:
-        messagebox.showerror("Encryption", "Open a vault to encrypt files.")
         return
 
     file_listbox_encrypted.delete(0, tk.END)
@@ -154,43 +171,37 @@ def encrypt_file_dialog():
             messagebox.showerror("Encryption", "Encryption failed.")
 
 root = tk.Tk()
-root.title("File Vault")
+root.title("Secure Vault")
 
 root.geometry("800x500")
 root.configure(bg="#f0f0f0")
 
-vault_label = tk.Label(root, text="No Vault Opened", anchor="w", font=("Helvetica", 14), bg="#f0f0f0")
+vault_label = tk.Label(root, text="No Vault Opened", anchor="w", bg="#f0f0f0")
 vault_label.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
 
 button_frame = tk.Frame(root, bg="#f0f0f0")
 button_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
 
-reload_button = tk.Button(button_frame, text="Reload Files", command=reload_files, width=15, bg="#4CAF50", fg="white", font=("Helvetica", 12), relief="raised")
-reload_button.grid(row=0, column=0, padx=5, pady=5)
-
-remove_button = tk.Button(button_frame, text="Remove Decrypted Files", command=remove_files, width=20, bg="#4CAF50", fg="white", font=("Helvetica", 12), relief="raised")
-remove_button.grid(row=0, column=1, padx=5, pady=5)
-
-encrypt_button = tk.Button(button_frame, text="Encrypt A File", command=encrypt_file_dialog, width=15, bg="#4CAF50", fg="white", font=("Helvetica", 12), relief="raised")
+encrypt_button = tk.Button(button_frame, text="Encrypt A File", command=encrypt_file_dialog, width=15, bg="green")
 encrypt_button.grid(row=0, column=2, padx=5, pady=5)
 
 encrypted_frame = tk.Frame(root, bg="#f0f0f0")
 encrypted_frame.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
 
-encrypted_label = tk.Label(encrypted_frame, text="Encrypted Files", font=("Helvetica", 14, "bold"), bg="#f0f0f0", anchor="center")
+encrypted_label = tk.Label(encrypted_frame, text="Encrypted Files", bg="#f0f0f0", anchor="center")
 encrypted_label.grid(row=0, column=0, padx=5, pady=(5, 10), sticky="ew")
 
-decrypted_label = tk.Label(encrypted_frame, text="Decrypted Files", font=("Helvetica", 14, "bold"), bg="#f0f0f0", anchor="center")
+decrypted_label = tk.Label(encrypted_frame, text="Decrypted Files", bg="#f0f0f0", anchor="center")
 decrypted_label.grid(row=0, column=2, padx=5, pady=(5, 10), sticky="ew")
 
 scrollbar_encrypted = tk.Scrollbar(encrypted_frame)
-file_listbox_encrypted = tk.Listbox(encrypted_frame, height=10, width=40, yscrollcommand=scrollbar_encrypted.set, font=("Helvetica", 12))
+file_listbox_encrypted = tk.Listbox(encrypted_frame, height=10, width=40)
 file_listbox_encrypted.grid(row=1, column=0, padx=5)
 scrollbar_encrypted.grid(row=1, column=1, sticky="ns")
 scrollbar_encrypted.config(command=file_listbox_encrypted.yview)
 
 scrollbar_decrypted = tk.Scrollbar(encrypted_frame)
-file_listbox_decrypted = tk.Listbox(encrypted_frame, height=10, width=40, yscrollcommand=scrollbar_decrypted.set, font=("Helvetica", 12))
+file_listbox_decrypted = tk.Listbox(encrypted_frame, height=10, width=40)
 file_listbox_decrypted.grid(row=1, column=2, padx=5)
 scrollbar_decrypted.grid(row=1, column=3, sticky="ns")
 scrollbar_decrypted.config(command=file_listbox_decrypted.yview)
@@ -198,26 +209,37 @@ scrollbar_decrypted.config(command=file_listbox_decrypted.yview)
 info_label = tk.Label(
     root,
     text="ℹ️ Double-click on encrypted files to decrypt them.",
-    font=("Helvetica", 12, "italic"),
-    bg="#d9edf7",
-    fg="#31708f",
+    bg="#f0f0f0",
     padx=10,
     pady=5,
 )
 info_label.grid(row=4, column=0, padx=10, pady=(0, 10), sticky="w")
 
+info_label = tk.Label(
+    root,
+    text="ℹ️ Double-click on decrypted file to open it.",
+    bg="#f0f0f0",
+    padx=10,
+    pady=5,
+)
+
+info_label.grid(row=5, column=0, padx=10, pady=(0, 10), sticky="w")
+
 file_listbox_encrypted.bind("<Double-1>", lambda event: double_click_encrypted(event, file_listbox_encrypted))
 file_listbox_decrypted.bind("<Double-1>", lambda event: double_click_decrypted(event, file_listbox_decrypted))
 
 
-button_frame_bottom = tk.Frame(root, bg="#f0f0f0")
+button_frame_bottom = tk.Frame(root)
 button_frame_bottom.grid(row=3, column=0, padx=10, pady=10, sticky="w")
 
-create_button = tk.Button(button_frame_bottom, text="Create Vault", command=create_vault, width=15, bg="#4CAF50", fg="white", font=("Helvetica", 12), relief="raised")
+create_button = tk.Button(button_frame_bottom, text="Create Vault", command=create_vault, width=15, bg="green")
 create_button.grid(row=0, column=0, padx=5, pady=5)
 
-open_vault_button = tk.Button(button_frame_bottom, text="Open Vault", command=open_vault, width=15, bg="#4CAF50", fg="white", font=("Helvetica", 12), relief="raised")
+open_vault_button = tk.Button(button_frame_bottom, text="Unlock Vault", command=unlock_vault, width=15, bg="green")
 open_vault_button.grid(row=0, column=1, padx=5, pady=5)
+
+lock_vault_button = tk.Button(button_frame_bottom, text="Lock Vault", command=lock_vault, width=15, bg="green")
+lock_vault_button.grid(row=0, column=2, padx=5, pady=5)
 
 root.mainloop()
 

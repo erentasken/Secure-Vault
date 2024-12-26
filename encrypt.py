@@ -153,7 +153,7 @@ def read_all_file_names(vault_name: str):
 
     offset = 0
     while offset < len(data):
-        offset += SALT_SIZE  # Skip salt
+        offset += SALT_SIZE
         file_name_len = int.from_bytes(data[offset:offset + 4], 'big')
         offset += 4
 
