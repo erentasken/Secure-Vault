@@ -1,114 +1,248 @@
+import platform
+import subprocess
 import tkinter as tk
-from tkinter import filedialog, messagebox
-import base64
+from tkinter import Listbox, filedialog, messagebox, simpledialog
 import os
 import json
-import bcrypt
-from encrypt import decrypt_file, encrypt_file, salt_and_hash_password
-from file_integrity import calculate_file_hash, verify_file_integrity
-import gui
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad, unpad
+from encrypt import decrypt_file, decrypt_vault, encrypt_file, encrypt_vault, read_all_file_names
 
-CONFIG_FILE = "config.json"
+DECRYPTED_FILE_EXT = '_decrypted'
+CurrentVaultName = None
+VAULT_PATH = './vault'
+Password = None
 
-def add_to_config_file(data, username=None, file_path=None):
-    # Save user credentials to the configuration file
-    if not os.path.exists(CONFIG_FILE):
-        config_data = {}
-    else:
-        with open(CONFIG_FILE, "r") as f:
-            config_data = json.load(f)
+def get_vault_path(vault_name):
+    return os.path.join(VAULT_PATH, vault_name)
 
-    if username:
-        config_data[username] = data
-    elif file_path:
-        config_data[file_path] = data
+def get_vault_file_path(vault_name):
+    return os.path.join(get_vault_path(vault_name), ".vault")
 
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(config_data, f, indent=4)
+def secure_input(prompt, hide_input=False):
+    return simpledialog.askstring(prompt, prompt, show="*" if hide_input else None)
 
-def register_user(username, password):
-    # Generate salt and hash the password using bcrypt
-    salt = bcrypt.gensalt(rounds=5) 
-    hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)  # Hash the password
 
-    user_data = {
-        "username": username,
-        "salt": base64.b64encode(salt).decode(),  # Encoding salt in base64 to save as text
-        "hashed_password": base64.b64encode(hashed_password).decode()
-    }
-    add_to_config_file(user_data, username=username)
+def create_vault():
+    global CurrentVaultName
+    vaultname = secure_input("Create Vault Name:")
+    if not vaultname:
+        return
 
-    return "User registered successfully!"
+    password = secure_input("Enter Vault Password:", hide_input=True)
+    if not password:
+        return
 
-def login_user(username, password):
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, "r") as f:
-            config_data = json.load(f)
+    encrypt_vault(vaultname, password)
+    messagebox.showinfo("Success", "Vault Created Successfully!")
 
-        if username in config_data:
-            user_data = config_data[username]
-            salt = base64.b64decode(user_data["salt"])
-            stored_hashed_password = base64.b64decode(user_data["hashed_password"])
+def lock_vault():
+    global CurrentVaultName, Password
 
-            # Verify the password using bcrypt
-            if bcrypt.checkpw(password.encode('utf-8'), stored_hashed_password):
-                print("Login successful!")
-                return True, salt
+    if not CurrentVaultName:
+        messagebox.showerror("Lock", "No Vault Opened")
+        return
+
+    remove_files() # removes decrypted files
+
+    encrypt_vault(CurrentVaultName, Password)
+    messagebox.showinfo("Lock", "Vault Locked!")
+    vault_label.config(text="No Vault Opened")
+    CurrentVaultName = None
+    Password = None
+
+    file_listbox_encrypted.delete(0, tk.END)
+    file_listbox_decrypted.delete(0, tk.END)
+    
+
+def unlock_vault():
+    global CurrentVaultName, Password
+
+    vaultname = simpledialog.askstring("Unlock Vault", "Enter Vault Name:")
+    if not vaultname:
+        messagebox.showerror("Unlock", "Provide Vault Name")
+        return
+
+    password = simpledialog.askstring("Open Vault", "Enter Vault Password:", show='*')
+    if not password:
+        messagebox.showerror("Unlock", "Provide Vault Password")
+        return
+    
+    if not decrypt_vault(vaultname, password):
+        messagebox.showerror("Unlock", "Invalid Vault Name or password.")
+        return
+
+    if not CurrentVaultName == None and not Password == None: 
+        remove_files()
+        encrypt_vault(CurrentVaultName, Password)
+
+    messagebox.showinfo("Open", "Vault Opened!")
+    vault_label.config(text="Opened Vault : " + vaultname)
+    CurrentVaultName = vaultname
+    Password = password
+
+    reload_files()
+
+def open_file(file_path):
+    current_os = platform.system()
+    try:
+        if current_os == 'Darwin':
+            subprocess.run(['open', file_path])
+        elif current_os == 'Windows':
+            os.startfile(file_path)
+        elif current_os == 'Linux':
+            subprocess.run(['xdg-open', file_path])
+        else:
+            raise OSError(f"Unsupported OS: {current_os}")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to open file: {e}")
+
+def reload_files():
+    global CurrentVaultName
+
+    if not CurrentVaultName:
+        return
+
+    file_listbox_encrypted.delete(0, tk.END)
+    file_listbox_decrypted.delete(0, tk.END)
+
+    files = read_all_file_names(CurrentVaultName)
+    if files:
+        for file in files:
+            file_listbox_encrypted.insert(tk.END, file)
+
+    vault_path = get_vault_path(CurrentVaultName)
+    for file in os.listdir(vault_path):
+        if file != ".vault":
+            file_listbox_decrypted.insert(tk.END, file)
+
+def remove_files():
+    global CurrentVaultName
+    vault_path = os.path.join(VAULT_PATH, CurrentVaultName) if CurrentVaultName else VAULT_PATH
+    for file in os.listdir(vault_path):
+        if DECRYPTED_FILE_EXT in file:
+            os.remove(os.path.join(vault_path, file))
+    reload_files()
+
+def double_click_encrypted(event, listbox : Listbox):
+    global CurrentVaultName, Password
+
+    selected_index = listbox.curselection()
+    if selected_index:
+        file_path = listbox.get(selected_index)
+        user_path = os.path.join(VAULT_PATH, CurrentVaultName)
+        file_full_path = os.path.join(user_path, file_path)
+
+        file_name = os.path.basename(file_full_path)
+
+        if not decrypt_file(file_name, Password, CurrentVaultName):
+            if CurrentVaultName: 
+                messagebox.showerror("Decryption", "Decryption failed.")
             else:
-                print("Invalid password.")
-                return False, None
-        else:
-            print("Username not found.")
-            return False, None
-    else:
-        print("No users registered yet.")
-        return False, None
+                messagebox.showerror("Decryption", "Open Vault For Decryption.")
+            return False
+        reload_files()
 
-def file_encryption(entry_key, user_name):
-    file_path = filedialog.askopenfilename(initialdir=os.getcwd(), title="Select a file")
+        messagebox.showinfo("Decryption", "File decrypted successfully!")
+
+        return True
+
+def double_click_decrypted(event, listbox : Listbox):
+    selected_index = listbox.curselection()
+    if selected_index:
+        file_path = listbox.get(selected_index)
+        file_full_path = os.path.join(VAULT_PATH, CurrentVaultName, file_path)
+        open_file(file_full_path)
+
+def encrypt_file_dialog():
+    global CurrentVaultName, Password
+
+    if not CurrentVaultName:
+        messagebox.showerror("Encryption", "Open a vault to encrypt files.")
+        return
+
+    file_path = filedialog.askopenfilename(title="Select a file to encrypt", filetypes=[("All Files", "*.*")])
     if file_path:
-        key = entry_key.get().encode('utf-8')
-        key = key[:16].ljust(16, b'\0')  # Ensure key is 16 bytes (pad if necessary)
+        user_path = os.path.join(VAULT_PATH, CurrentVaultName) if CurrentVaultName else VAULT_PATH
+        os.makedirs(user_path, exist_ok=True)
 
-        if user_name == 'guest':
-            encrypted_file_path = encrypt_file(file_path, key, 'guest')
+        if encrypt_file(file_path, Password, CurrentVaultName):
+            messagebox.showinfo("Encryption", "File encrypted successfully!")
+            reload_files()
         else:
-            encrypted_file_path = encrypt_file(file_path, key, user_name)
+            messagebox.showerror("Encryption", "Encryption failed.")
 
-        file_hash = calculate_file_hash(encrypted_file_path)
+root = tk.Tk()
+root.title("Secure Vault")
 
-        file_data = {
-            "filename": encrypted_file_path,
-            "file_hash": file_hash
-        }
+root.geometry("800x500")
+root.configure(bg="#f0f0f0")
 
-        if file_hash:
-            add_to_config_file(file_data, file_path=encrypted_file_path)
-        else:
-            print("Failed to calculate hash for encrypted file")
+vault_label = tk.Label(root, text="No Vault Opened", anchor="w", bg="#f0f0f0")
+vault_label.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
 
-        messagebox.showinfo("Success", f"Encrypted file saved as: {encrypted_file_path}")
+button_frame = tk.Frame(root, bg="#f0f0f0")
+button_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
 
-def file_decryption(entry_key, user_name):
-    file_path = filedialog.askopenfilename(initialdir=os.getcwd(), title="Select an encrypted file")
-    if file_path:
-        key = entry_key.get().encode('utf-8')
-        key = key[:16].ljust(16, b'\0')  # Ensure key is 16 bytes (pad if necessary)
+encrypt_button = tk.Button(button_frame, text="Encrypt A File", command=encrypt_file_dialog, width=15, bg="green")
+encrypt_button.grid(row=0, column=2, padx=5, pady=5)
 
-        print(f"Decrypting file: {file_path}")
+encrypted_frame = tk.Frame(root, bg="#f0f0f0")
+encrypted_frame.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
 
-        if not verify_file_integrity(file_path, username=user_name):
-            messagebox.showerror("Integrity Error", "The file's integrity could not be verified!")
-            return
+encrypted_label = tk.Label(encrypted_frame, text="Encrypted Files", bg="#f0f0f0", anchor="center")
+encrypted_label.grid(row=0, column=0, padx=5, pady=(5, 10), sticky="ew")
 
-        if user_name == 'guest':
-            decrypted_file = decrypt_file(file_path, key, 'guest')
-        else:
-            decrypted_file = decrypt_file(file_path, key, user_name)
+decrypted_label = tk.Label(encrypted_frame, text="Decrypted Files", bg="#f0f0f0", anchor="center")
+decrypted_label.grid(row=0, column=2, padx=5, pady=(5, 10), sticky="ew")
 
-        messagebox.showinfo("Success", f"Decrypted file saved as: {decrypted_file}")
+scrollbar_encrypted = tk.Scrollbar(encrypted_frame)
+file_listbox_encrypted = tk.Listbox(encrypted_frame, height=10, width=40)
+file_listbox_encrypted.grid(row=1, column=0, padx=5)
+scrollbar_encrypted.grid(row=1, column=1, sticky="ns")
+scrollbar_encrypted.config(command=file_listbox_encrypted.yview)
 
-if __name__ == "__main__":
-    gui.main_gui()
+scrollbar_decrypted = tk.Scrollbar(encrypted_frame)
+file_listbox_decrypted = tk.Listbox(encrypted_frame, height=10, width=40)
+file_listbox_decrypted.grid(row=1, column=2, padx=5)
+scrollbar_decrypted.grid(row=1, column=3, sticky="ns")
+scrollbar_decrypted.config(command=file_listbox_decrypted.yview)
+
+info_label = tk.Label(
+    root,
+    text="ℹ️ Double-click on encrypted files to decrypt them.",
+    bg="#f0f0f0",
+    padx=10,
+    pady=5,
+)
+info_label.grid(row=4, column=0, padx=10, pady=(0, 10), sticky="w")
+
+info_label = tk.Label(
+    root,
+    text="ℹ️ Double-click on decrypted file to open it.",
+    bg="#f0f0f0",
+    padx=10,
+    pady=5,
+)
+
+info_label.grid(row=5, column=0, padx=10, pady=(0, 10), sticky="w")
+
+file_listbox_encrypted.bind("<Double-1>", lambda event: double_click_encrypted(event, file_listbox_encrypted))
+file_listbox_decrypted.bind("<Double-1>", lambda event: double_click_decrypted(event, file_listbox_decrypted))
+
+
+button_frame_bottom = tk.Frame(root)
+button_frame_bottom.grid(row=3, column=0, padx=10, pady=10, sticky="w")
+
+create_button = tk.Button(button_frame_bottom, text="Create Vault", command=create_vault, width=15, bg="green")
+create_button.grid(row=0, column=0, padx=5, pady=5)
+
+open_vault_button = tk.Button(button_frame_bottom, text="Unlock Vault", command=unlock_vault, width=15, bg="green")
+open_vault_button.grid(row=0, column=1, padx=5, pady=5)
+
+lock_vault_button = tk.Button(button_frame_bottom, text="Lock Vault", command=lock_vault, width=15, bg="green")
+lock_vault_button.grid(row=0, column=2, padx=5, pady=5)
+
+root.mainloop()
+
+encrypt_vault(CurrentVaultName, Password)
+
+
